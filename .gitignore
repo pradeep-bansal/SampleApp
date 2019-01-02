@@ -10,3 +10,4 @@ SampleApp.Tests
 SampleApp/obj
 SampleApp/Web.Debug.config
 SampleApp/Web.Release.config
+SampleApp.Tests
