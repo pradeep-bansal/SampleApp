@@ -2,9 +2,12 @@ Author: Preetham K A    Date : 22/Jan/2019
 \=========================================\
 
 
-MVC vs Webforms vs ASP.NET 
-Why MVC and why is better than Webforms?
-Pre-requisite for MVC
+1) MVC vs Webforms vs ASP.NET 
+	ASP.NET is a framework while MVC and Webform are coding styles. 
+	MVC is a visual studio code template to  write code using MVC architecture style.
+	 and WebForm is your old code behind style.
+
+2) Why MVC and why is better than Webforms?
 
 Lab 1: Creating a simple ASP.NET MVC application
 Step 1: - Select the project template
