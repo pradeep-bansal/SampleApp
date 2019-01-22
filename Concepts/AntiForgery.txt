@@ -1,0 +1,101 @@
+You can't use [ValidateAntiForgeryToken] with traditional ASP.NET WebForms. We can use it on ASP.NET MVC
+
+Using the AntiForgeryToken helpers, put an @Html.AntiForgeryToken() into the form(Questions.cshtml)
+This will output something like the following:
+
+<form action="/UserProfile/SubmitUpdate" method="post">
+    <input name="__RequestVerificationToken" type="hidden" value="saTFWpkKN0BYazFtN6c4YbZAmsEwG0srqlUqqloi/fVgeV2ciIFVmelvzwRZpArs" />
+    <!-- rest of form goes here -->
+</form>
+
+
+
+On browser page(checkout->Questions.cshtml) we have a hidden type of input variable in forms tag, its name is __RequestVerificationToken, it's value is a GUID.(as shown above)
+
+At the same time, Html.AntiForgeryToken() will give the visitor a cookie called __RequestVerificationToken, with the same value as the random hidden value shown above. (both the values string looks different when it is encoded)
+it's a random value (like a GUID), stored in the user's cookies, so unique to that user.
+
+when you want to make a post request(ajax), we are fetching the value of the __RequestVerificationToken from the forms input field, and passing along with the ajax call to server.
+
+Next, to validate an incoming form post, add the [ValidateAntiForgeryToken] filter to your target action method. For example,
+
+ [HttpPost, ValidateAntiForgeryToken]
+     public ActionResult NextQuestionView(QuestionModel questionModel, FormCollection formCollection)
+        {
+            //...
+        }
+This is an authorization filter that checks that:
+
+The incoming request has a cookie called __RequestVerificationToken
+The incoming request has a Request.Form entry called __RequestVerificationToken
+These cookie and Request.Form values match
+
+{ That means, when server sends a webform to a browser, it includes a token in webform as well as cookie. 
+when you want to submit the form, you have to send back the cookie along with form, in server, controller method will verify 
+ both the values are same or not, if not same, then it will generate an authorization failure with message “A required anti-forgery token was not supplied or was invalid”. 
+Incase hacker gets the cookie, and submits a form with this cookie, the form hidden field values will not match.
+}
+
+Ways to stop CSRF
+----------------------------
+There are two main ways to block CSRF:
+
+1) Check that incoming requests have a Referer header referencing your domain. This will stop requests unwittingly submitted from a third-party domain. However, some people disable their browser’s Referer header for privacy reasons, and attackers can sometimes spoof that header if the victim has      certain versions of Adobe Flash installed. This is a weak solution.
+2) Put a user-specific token as a hidden field in legitimate forms, and check that the right value was submitted. If, for example, this token is the user’s password, then a third-party can’t forge a valid form post, because they don’t know each user’s password. However, don’t expose the user’s password this     way: Instead, it’s better to use some random value (such as a GUID) which you’ve stored in the visitor’s Session collection or into a Cookie.
+
+Using salt
+--------------------
+Salt? What? In case you want to protect multiple forms in your application independently of each other, you can use a “salt” value when you call Html.AntiForgeryToken(), e.g.,
+
+<%= Html.AntiForgeryToken("someArbitraryString") %>
+… and also in [ValidateAntiForgeryToken], e.g.,
+
+[ValidateAntiForgeryToken(Salt="someArbitraryString")]
+public ViewResult SubmitUpdate()
+{
+    // ... etc
+}
+Salt is just an arbitrary string. A different salt value means a different anti-forgery token will be generated. This means that even if an attacker manages to get hold of a valid token somehow, they can’t reuse it in other parts of the application where a different salt value is required. (If anyone can suggest other use cases for salt, please let me know.)
+
+Limitations of the Anti-Forgery helpers
+ASP.NET MVC’s anti-CSRF helpers work very nicely, but you should be aware of a few limitations:
+
+All legitimate visitors must accept cookies (otherwise, [ValidateAntiForgeryToken] will deny their form posts). Arguably this isn’t a limitation, because unless visitors allow cookies, you probably don’t have anything to protect anyway.
+It only works with POST requests, not GET requests. Arguably this isn’t a limitation, because under the normal HTTP conventions, you shouldn’t be using GET requests for anything other than read-only operations.
+It’s easily bypassed if you have any XSS holes on your domain. An XSS hole would allow an attacker to read a victim’s anti-forgery token value, then use it to forge valid posts. So, don’t have XSS holes!
+It relies on the potential victim’s browser implementing cross-domain boundaries solidly. Browsers are supposed to stop foreign domains from reading your app’s response text and cookies, and are supposed to stop foreign domains from writing cookies to your domain. If an attacker manages to find a way around this, they can bypass [ValidateAntiForgeryToken]. Of course that’s not supposed to be possible. For the most part, modern browsers block this line of attack.
+
+Questions:
+1)Is it possible to use this for multiple forms on the same page
+A:- you can use it on multiple forms on the same page. The verification value is fixed for the duration of the visitor's session.
+
+2) if I understood correctly, in order pass the AntiForgery test, you only need a form element with the same value of a cookie named __RequestVerificationToken, yet I think it is possible to create a cookie from client side with that name and just fill it with the same key stored on an input hidden of my malicious page... Would that cheat the test? Also, why don't they just encrypt the cookie with the anti forgery token? That way, the attacker won't have means to recreate a cookie with the same value of the form (unless he discovers the key, of course) and you can use the cookie like a certificate of the page.
+A:- yes, to pass the antiforgery test, a request needs both a cookie and a form element with the same __RequestVerificationToken value. However, an attacker could only create such a cookie on the client if they had the means to write arbitrary cookies on your domain, which they can't do unless you already have a XSS vulnerability. So it isn't a viable way to cheat the test. Also, since an attacker cannot read a third party's cookies or form values (except via an XSS hole, which would be a much worse vulnerability anyway), encrypting the token wouldn't make any difference to the level of security provided.
+
+3) i'm thinking how would this work in a multi-tab scenario. let's say you open a page where you have this hidden input and also your cookie is being set to value "abc". now you open a new tab, go to a different page (or possibly the same page), the token will be set to a new value "xyz". then you go back to the first tab and submit a request, wouldn't that be an invalid request because the hidden input value remains "abc" but the cookie value has changed to "xyz"?
+A:-the random token value remains constant throughout your browsing session, so there's no problem with multiple tabs.
+
+My Answer:- This token will be saved in cookies along with sessionId, so the right cookie will be sent##################
+
+4) You write:"This prevents CSRF because even if a potential victim has an __RequestVerificationToken cookie, an attacker can’t find out its value, so they can’t forge a valid form post with the same value in Request.Form."
+But it seems not true. Why I can't find out its value?
+I can simply do that:
+__RequestVerificationToken.Value=Request.Cookies[cookiename].Value;
+Where cookiename is "__RequestVerificationToken_" + encoded AppPath.
+Now I have token value and can do valid post.
+A:- this mechanism protects against *request spoofing*, nothing else. The attack you describe would require an attacker to be able to run arbitrary .NET code on your server, which you should never allow, and if you do you have far worse security problems to worry about.
+
+
+
+
+
+
+[
+ guess they chose to use cookie storage rather than session storage for scalability (in web farm scenarios, you sometimes can't use session storage). Also, session state is volatile (can be erased at any moment) whereas cookies can stick around indefinitely.
+But out of interest, why do you want to do this? The token contains a user-specific random value anyway, so the token is always user-specific. What extra benefit do you expect to get from having a user-specific salt value?
+
+it's about authenticating that requests made by that user were really intentional and not automated by a third party. Wikipedia has a decent explanation of CSRF if you need to know more.
+
+How would you identify the session? By yet another cookie? And then how would you prove that an authorized user had used that cookie to lookup the session and perform authorized-only actions? Your 'solution' is a chicken and egg problem :-)
+
+http://blog.stevensanderson.com/2008/09/01/prevent-cross-site-request-forgery-csrf-using-aspnet-mvcs-antiforgerytoken-helper/
