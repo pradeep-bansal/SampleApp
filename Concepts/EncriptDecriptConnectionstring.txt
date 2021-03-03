@@ -1,0 +1,8 @@
+Navigate to the below location by using command prompt:
+cd C:\Windows\Microsoft.NET\Framework\v4.0.30319 
+
+Run the brlow command to Encript the connection string:
+ASPNET_REGIIS -PEF "connectionStrings" "C:\Git\SampleApp\SampleApp" 
+
+Run the below command to Decript the connection string:
+ASPNET_REGIIS -PDF "connectionStrings" "C:\Git\SampleApp\SampleApp"

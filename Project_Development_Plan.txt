@@ -1,0 +1,38 @@
+Author: Preetham K A    Date : 22/Jan/2019
+\=========================================\
+
+
+1) MVC vs Webforms vs ASP.NET 
+	ASP.NET is a framework while MVC and Webform are coding styles. 
+	MVC is a visual studio code template to  write code using MVC architecture style.
+	 and WebForm is your old code behind style.
+
+2) Why MVC and why is better than Webforms?
+
+Lab 1: Creating a simple ASP.NET MVC application
+Step 1: - Select the project template
+Step 3: - Add Controller
+Step 4: - Add Views
+Step 5: - Connect the view to the controller
+
+Lab 2: Passing data between controllers and views
+Step 1: Create project and set view data
+Step 2: Display view data in the view
+
+Lab 3: Creating a simple model using MVC
+Step 1: Create a simple class file
+Step 2: Define the controller with action
+Step 3: Create strongly typed view using the class
+
+Lab 4: Creating a simple MVC data entry screen
+Step 1: Creating your data entry ASPX page
+Step 2: Creating the controller
+Step 3: Create the view to display the customer object
+
+Lab 5: Using HTML Helper to create views faster
+Step 1: Create the Customer class
+Step 2: Creating the input HTML form using helper classes
+Step 3: Create a strongly typed view by using the customer class
+Step 4: Creating the controller class
+
+Further reading’s on MVC
